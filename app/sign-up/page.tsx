@@ -16,7 +16,7 @@ export default async function SignUpPage({
   const user = await auth({ cookieStore });
   
   if (user) {
-    redirect("/");
+    redirect("/dashboard");
   }
 
   return (

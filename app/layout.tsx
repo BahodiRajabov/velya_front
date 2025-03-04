@@ -16,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Default Title",
-  description: "Default description",
+  title: "Velya - AI-Powered Instagram DM Management",
+  description: "Handle high volumes of Instagram DMs with real AI assistance. Convert conversations into qualified leads automatically at velya.io",
 };
 
 export default function RootLayout({

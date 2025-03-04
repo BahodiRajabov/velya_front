@@ -86,7 +86,7 @@ export function LoginForm({
       if (redirectedFrom) {
         router.push(redirectedFrom);
       } else {
-        router.push("/");
+        router.push("/dashboard");
       }
     }
   };
