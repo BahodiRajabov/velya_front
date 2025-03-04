@@ -1,0 +1,299 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Send, Image, User, Calendar, Phone, Tag, UserCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createBrowserClient } from "@supabase/ssr";
+import { useAppStore } from "@/lib/store";
+import { Message } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  currentUserId: string;
+}
+
+export function ChatArea({ currentUserId }: Props) {
+  const { selectedChat } = useAppStore();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [messageInput, setMessageInput] = useState("");
+  const [showCustomerPanel, setShowCustomerPanel] = useState(true);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedChat) return;
+
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from("instagram_messages")
+          .select(`
+            id,
+            chat_id,
+            instagram_message_id,
+            sender_id,
+            recipient_id,
+            type,
+            message_type,
+            message_timestamp,
+            metadata
+          `)
+          .eq("chat_id", selectedChat.id)
+          .order("message_timestamp", { ascending: true });
+
+        if (error) throw error;
+        setMessages(data || []);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMessages();
+  }, [selectedChat, supabase]);
+
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !selectedChat) return;
+    console.log("Sending message:", messageInput);
+    setMessageInput("");
+  };
+
+  if (!selectedChat) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-gray-500">
+        Select a conversation to start messaging
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 h-[calc(100vh-8rem)] overflow-hidden">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0 bg-white">
+        {/* Chat Header */}
+        <div className="px-6 py-3 border-b bg-white flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Instagram Account Avatar with Fallback */}
+            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center border border-gray-200">
+              {selectedChat.metadata.profile_picture_url ? (
+                <img
+                  src={selectedChat.metadata.profile_picture_url}
+                  alt={selectedChat.metadata.name || ""}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <UserCircle className="w-6 h-6 text-gray-400" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-medium truncate">{selectedChat.metadata.name || selectedChat.metadata.instagram_username}</p>
+                {selectedChat.metadata.customer && (
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                    Customer
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 truncate">@{selectedChat.metadata.instagram_username}</p>
+            </div>
+          </div>
+
+          {/* Toggle Customer Panel Button */}
+          {selectedChat.metadata.customer && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-4"
+              onClick={() => setShowCustomerPanel(!showCustomerPanel)}
+            >
+              <User className="w-4 h-4 mr-2" />
+              {showCustomerPanel ? 'Hide Details' : 'Show Details'}
+            </Button>
+          )}
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="min-h-full flex flex-col justify-end">
+            <div className="p-6 space-y-4">
+              {isLoading ? (
+                <div className="text-center text-gray-500 py-4">Loading messages...</div>
+              ) : messages.length === 0 ? (
+                <div className="text-center text-gray-500 py-4">No messages yet</div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message) => {
+                    const isOutgoing = message.type === "outgoing";
+                    return (
+                      <div key={message.id} className={`flex flex-col ${isOutgoing ? "items-end" : "items-start"}`}>
+                        <div
+                          className={cn(
+                            "rounded-2xl px-4 py-2 max-w-[70%] relative shadow-sm",
+                            isOutgoing
+                              ? "bg-blue-500 text-white rounded-tr-none"
+                              : "bg-white border border-gray-100 rounded-tl-none"
+                          )}
+                        >
+                          {message.message_type === "text" && <p>{message.metadata.text}</p>}
+                          {(message.message_type === "image" || message.message_type === "video") && message.metadata.attachments && (
+                            <div className="space-y-2">
+                              {message.metadata.attachments.map((attachment: any, index: number) => (
+                                <div key={index}>
+                                  {message.message_type === "image" && (
+                                    <img
+                                      src={attachment.url}
+                                      alt="Shared media"
+                                      className="rounded-lg max-w-full"
+                                    />
+                                  )}
+                                  {message.message_type === "video" && (
+                                    <video
+                                      src={attachment.url}
+                                      controls
+                                      className="rounded-lg max-w-full"
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Reaction display */}
+                          {message.metadata.reaction && (
+                            <div 
+                              className={`absolute ${isOutgoing ? '-left-6' : '-right-6'} -bottom-2 bg-white rounded-full p-1 shadow-sm border border-gray-100`}
+                            >
+                              <span className="text-sm">{message.metadata.reaction.emoji}</span>
+                            </div>
+                          )}
+                        </div>
+                        {/* Read status for outgoing messages */}
+                        {isOutgoing && message.metadata.isRead && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Read {new Date(message.metadata.readTimestamp).toLocaleTimeString()}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Message Input */}
+        <div className="p-4 border-t bg-white sticky bottom-0">
+          <div className="flex items-center gap-3 max-w-4xl mx-auto">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Image className="w-5 h-5" />
+            </Button>
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder="Type your message..."
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleSendMessage();
+                  }
+                }}
+                className="w-full px-4 py-2.5 bg-gray-50 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-200"
+              />
+            </div>
+            <Button
+              size="icon"
+              className="rounded-full bg-blue-500 hover:bg-blue-600"
+              onClick={handleSendMessage}
+              disabled={!messageInput.trim()}
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Customer Info Panel - Right Side */}
+      {selectedChat.metadata.customer && showCustomerPanel && (
+        <div className="w-80 border-l bg-white overflow-y-auto">
+          <div className="p-6">
+            {/* Customer Profile Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
+                <User className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900">Customer Profile</h3>
+                {selectedChat.metadata.last_updated && (
+                  <p className="text-xs text-gray-500">
+                    Updated {new Date(selectedChat.metadata.last_updated).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Customer Details Sections */}
+            <div className="space-y-6">
+              {/* Basic Info */}
+              <div className="p-4 bg-gray-50 rounded-lg space-y-4">
+                <h4 className="text-sm font-medium text-gray-500">Basic Information</h4>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-500">Full Name</p>
+                    <p className="font-medium">{selectedChat.metadata.customer.full_name}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-500">Phone Number</p>
+                    <p className="font-medium">{selectedChat.metadata.customer.phone_number}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Interests */}
+              {selectedChat.metadata.customer.interests && selectedChat.metadata.customer.interests.length > 0 && (
+                <div className="p-4 bg-gray-50 rounded-lg space-y-4">
+                  <h4 className="text-sm font-medium text-gray-500">Interests</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedChat.metadata.customer.interests.map((interest: string, index: number) => (
+                      <span 
+                        key={index} 
+                        className="px-2.5 py-1 bg-white text-blue-700 rounded-full text-xs font-medium border border-blue-100"
+                      >
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Activity Stats */}
+              <div className="p-4 bg-gray-50 rounded-lg space-y-4">
+                <h4 className="text-sm font-medium text-gray-500">Activity</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-500">First Contact</p>
+                    <p className="font-medium">
+                      {new Date(selectedChat.last_interaction).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-500">Total Messages</p>
+                    <p className="font-medium">{messages.length}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
