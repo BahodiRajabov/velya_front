@@ -82,10 +82,10 @@ export function ChatArea({ currentUserId }: Props) {
           <div className="flex items-center gap-3 min-w-0">
             {/* Instagram Account Avatar with Fallback */}
             <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center border border-gray-200">
-              {selectedChat.metadata.profile_picture_url ? (
+              {selectedChat.metadata?.participantProfile?.profile_pic ? (
                 <img
-                  src={selectedChat.metadata.profile_picture_url}
-                  alt={selectedChat.metadata.name || ""}
+                  src={selectedChat.metadata.participantProfile.profile_pic}
+                  alt={selectedChat.metadata?.participantProfile?.name || ""}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -94,14 +94,18 @@ export function ChatArea({ currentUserId }: Props) {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <p className="font-medium truncate">{selectedChat.metadata.name || selectedChat.metadata.instagram_username}</p>
+                <p className="font-medium truncate">
+                  {selectedChat.metadata?.participantProfile?.name || selectedChat.metadata?.participantProfile?.username || selectedChat.participant_sid}
+                </p>
                 {selectedChat.metadata.customer && (
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                     Customer
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-500 truncate">@{selectedChat.metadata.instagram_username}</p>
+              <p className="text-sm text-gray-500 truncate">
+                @{selectedChat.metadata?.participantProfile?.username || selectedChat.participant_sid}
+              </p>
             </div>
           </div>
 
@@ -227,8 +231,16 @@ export function ChatArea({ currentUserId }: Props) {
           <div className="p-6">
             {/* Customer Profile Header */}
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
-                <User className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-blue-50 flex items-center justify-center">
+                {selectedChat.metadata?.participantProfile?.profile_pic ? (
+                  <img
+                    src={selectedChat.metadata.participantProfile.profile_pic}
+                    alt={selectedChat.metadata?.participantProfile?.name || ""}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-6 h-6 text-blue-600" />
+                )}
               </div>
               <div>
                 <h3 className="font-medium text-gray-900">Customer Profile</h3>
@@ -248,12 +260,24 @@ export function ChatArea({ currentUserId }: Props) {
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <p className="text-xs text-gray-500">Full Name</p>
-                    <p className="font-medium">{selectedChat.metadata.customer.full_name}</p>
+                    <p className="text-sm font-medium">{selectedChat.metadata?.participantProfile?.name || "Not provided"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-gray-500">Phone Number</p>
-                    <p className="font-medium">{selectedChat.metadata.customer.phone_number}</p>
+                    <p className="text-xs text-gray-500">Username</p>
+                    <p className="text-sm font-medium">@{selectedChat.metadata?.participantProfile?.username || selectedChat.participant_sid}</p>
                   </div>
+                  {selectedChat.metadata?.participantProfile?.follower_count !== undefined && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-gray-500">Followers</p>
+                      <p className="text-sm font-medium">{selectedChat.metadata.participantProfile.follower_count}</p>
+                    </div>
+                  )}
+                  {selectedChat.metadata?.participantProfile?.is_verified_user !== undefined && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-gray-500">Verified</p>
+                      <p className="text-sm font-medium">{selectedChat.metadata.participantProfile.is_verified_user ? "Yes" : "No"}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 

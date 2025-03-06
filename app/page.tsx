@@ -298,8 +298,8 @@ const Home = () => {
               <div>
                 <h3 className="text-lg font-medium mb-2 text-gray-900">Structured lead data</h3>
                 <p className="text-gray-600 leading-relaxed">Get organized customer information ready for your CRM or sales team to follow up with qualified leads.</p>
-              </div>
-            </div>
+        </div>
+      </div>
             
             <div className="bg-white p-6 rounded-lg flex items-start">
               <Image src="/chart.png" alt="Chart" width={40} height={40} className="h-10 w-auto mr-4 flex-shrink-0" />
@@ -326,7 +326,7 @@ const Home = () => {
               Start free trial
             </Button>
             <Button 
-              variant="outline" 
+              variant="outline"
               onClick={() => router.push("/sign-in")}
               className="bg-white border-none text-gray-700 hover:text-blue-600 px-6 py-3 rounded-md text-base font-normal transition-colors"
             >

@@ -14,6 +14,11 @@ function ChatItem({ chat, isSelected, onClick }: {
 }) {
   const [imageError, setImageError] = useState(false);
   
+  // Extract profile data with fallbacks
+  const profilePic = chat.metadata?.participantProfile?.profile_pic || null;
+  const username = chat.metadata?.participantProfile?.username || chat.participant_sid;
+  const displayName = chat.metadata?.participantProfile?.name || username;
+  
   return (
     <div
       onClick={onClick}
@@ -24,10 +29,10 @@ function ChatItem({ chat, isSelected, onClick }: {
     >
       <div className="relative">
         <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center">
-          {chat.metadata.profile_picture_url && !imageError ? (
+          {profilePic && !imageError ? (
             <img
-              src={chat.metadata.participantProfile.profile_picture_url}
-              alt={chat.participant_sid}
+              src={profilePic}
+              alt={username}
               className="w-full h-full object-cover"
               onError={() => setImageError(true)}
             />
@@ -44,7 +49,7 @@ function ChatItem({ chat, isSelected, onClick }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
           <p className="font-medium truncate">
-            {chat.metadata.name || chat.participant_sid}
+            {displayName}
           </p>
           <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
             {new Date(chat.last_interaction).toLocaleDateString()}
@@ -52,7 +57,7 @@ function ChatItem({ chat, isSelected, onClick }: {
         </div>
         <div className="flex items-center gap-2">
           <p className="text-xs text-blue-600">
-            @{chat.participant_sid}
+            @{username}
           </p>
           {chat.metadata.customer && (
             <span className="text-xs text-gray-500">• Customer</span>

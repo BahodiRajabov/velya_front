@@ -25,6 +25,18 @@ export interface InstagramChat {
   metadata: {
     name?: string;
     profile_picture_url?: string;
+    customer?: boolean;
+    last_updated?: string;
+    participantProfile?: {
+      id: string;
+      name?: string;
+      username?: string;
+      profile_pic?: string;
+      follower_count?: number;
+      is_verified_user?: boolean;
+      is_business_follow_user?: boolean;
+      is_user_follow_business?: boolean;
+    };
     [key: string]: any;
   };
 }
