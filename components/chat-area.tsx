@@ -109,7 +109,7 @@ export function ChatArea({ currentUserId }: Props) {
             </div>
           </div>
 
-          {/* Toggle Customer Panel Button */}
+          {/* Toggle Customer Panel Button */} 
           {selectedChat.metadata.customer && (
             <Button
               variant="ghost"

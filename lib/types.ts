@@ -25,7 +25,7 @@ export interface InstagramChat {
   metadata: {
     name?: string;
     profile_picture_url?: string;
-    customer?: boolean;
+    customer?: any;
     last_updated?: string;
     participantProfile?: {
       id: string;
