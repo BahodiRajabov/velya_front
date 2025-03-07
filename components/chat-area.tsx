@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Send, Image, User, Calendar, Phone, Tag, UserCircle } from "lucide-react";
+import { Send, Image, User, Calendar, Phone, Tag, UserCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createBrowserClient } from "@supabase/ssr";
@@ -19,50 +19,112 @@ export function ChatArea({ currentUserId }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [messageInput, setMessageInput] = useState("");
   const [showCustomerPanel, setShowCustomerPanel] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!selectedChat) return;
+  // Extract fetchMessages outside useEffect so it can be called from button click
+  const fetchMessages = async () => {
+    if (!selectedChat) return;
 
-      try {
+    try {
+      // Only set isLoading to true on initial load, not on refresh
+      if (!isRefreshing) {
         setIsLoading(true);
-        const { data, error } = await supabase
-          .from("instagram_messages")
-          .select(`
-            id,
-            chat_id,
-            instagram_message_id,
-            sender_id,
-            recipient_id,
-            type,
-            message_type,
-            message_timestamp,
-            metadata
-          `)
-          .eq("chat_id", selectedChat.id)
-          .order("message_timestamp", { ascending: true });
-
-        if (error) throw error;
-        setMessages(data || []);
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-      } finally {
-        setIsLoading(false);
       }
-    };
+      
+      const { data, error } = await supabase
+        .from("instagram_messages")
+        .select(`
+          id,
+          chat_id,
+          instagram_message_id,
+          sender_id,
+          recipient_id,
+          type,
+          message_type,
+          message_timestamp,
+          metadata
+        `)
+        .eq("chat_id", selectedChat.id)
+        .order("message_timestamp", { ascending: true });
 
+      if (error) throw error;
+      setMessages(data || []);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // Handle refresh button click
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchMessages();
+  };
+
+  useEffect(() => {
     fetchMessages();
   }, [selectedChat, supabase]);
 
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedChat) return;
-    console.log("Sending message:", messageInput);
-    setMessageInput("");
+    
+    const messageText = messageInput.trim();
+    setMessageInput(""); // Clear input immediately for better UX
+    
+    try {
+      // Send message using human agent endpoint
+      const response = await fetch('https://autosms.mindell.ai/messages/human-agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chatId: selectedChat.id,
+          recipientPsid: selectedChat.participant_sid,
+          message: messageText
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send message');
+      }
+
+      // Get the response data
+      const responseData = await response.json();
+      console.log("Message sent successfully:", responseData);
+      
+      // Create a new message object with the actual message_id from the response
+      const newMessage: Message = {
+        id: `msg-${Date.now()}`,
+        chat_id: selectedChat.id,
+        instagram_message_id: responseData.result?.message_id || `local-${Date.now()}`,
+        sender_id: currentUserId,
+        recipient_id: responseData.result?.recipient_id || selectedChat.participant_sid,
+        type: 'outgoing',
+        message_type: 'text',
+        message_timestamp: Date.now(),
+        metadata: {
+          text: messageText
+        }
+      };
+      
+      // Add the new message to the messages array
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+      
+    } catch (error) {
+      console.error("Error sending message:", error);
+      alert("Failed to send message. Please try again.");
+      // Restore the message input if sending failed
+      setMessageInput(messageText);
+    }
   };
 
   if (!selectedChat) {
@@ -109,18 +171,32 @@ export function ChatArea({ currentUserId }: Props) {
             </div>
           </div>
 
-          {/* Toggle Customer Panel Button */} 
-          {selectedChat.metadata.customer && (
+          <div className="flex items-center gap-2">
+            {/* Refresh Button */}
             <Button
               variant="ghost"
               size="sm"
-              className="ml-4"
-              onClick={() => setShowCustomerPanel(!showCustomerPanel)}
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex items-center"
+              title="Refresh messages"
             >
-              <User className="w-4 h-4 mr-2" />
-              {showCustomerPanel ? 'Hide Details' : 'Show Details'}
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
             </Button>
-          )}
+
+            {/* Toggle Customer Panel Button */} 
+            {selectedChat.metadata.customer && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCustomerPanel(!showCustomerPanel)}
+              >
+                <User className="w-4 h-4 mr-2" />
+                {showCustomerPanel ? 'Hide Details' : 'Show Details'}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Messages Area */}
@@ -129,12 +205,15 @@ export function ChatArea({ currentUserId }: Props) {
             <div className="p-6 space-y-4">
               {isLoading ? (
                 <div className="text-center text-gray-500 py-4">Loading messages...</div>
+              ) : isRefreshing ? (
+                <div className="text-center text-gray-500 py-4">Refreshing messages...</div>
               ) : messages.length === 0 ? (
                 <div className="text-center text-gray-500 py-4">No messages yet</div>
               ) : (
                 <div className="space-y-4">
                   {messages.map((message) => {
-                    const isOutgoing = message.type === "outgoing";
+                    // Consider a message outgoing if it's from the current user or explicitly marked as outgoing
+                    const isOutgoing = message.sender_id === currentUserId || message.type === "outgoing" || message.type === "human_agent";
                     return (
                       <div key={message.id} className={`flex flex-col ${isOutgoing ? "items-end" : "items-start"}`}>
                         <div
