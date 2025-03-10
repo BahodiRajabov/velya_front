@@ -13,7 +13,7 @@ export function Footer() {
               AI-powered Instagram DM management that helps businesses handle high volumes of messages and extract qualified leads automatically.
             </p>
             <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} Velya. All rights reserved.
+              © {new Date().getFullYear()} Inteclab, Inc. All rights reserved.
             </p>
           </div>
           
