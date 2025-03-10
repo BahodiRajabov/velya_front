@@ -49,7 +49,7 @@ const Dashboard = () => {
   const handleConnectInstagram = async () => {
     try {
       setIsConnecting(true);
-      const response = await fetch(`http://localhost:8080/auth/instagram?profileId=${user?.id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/instagram?profileId=${user?.id}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
