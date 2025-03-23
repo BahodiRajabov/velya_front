@@ -3,9 +3,7 @@ import { persist } from 'zustand/middleware';
 import { AppState } from './types';
 
 // Helper functions to handle ID formatting
-const formatAccountId = (id: string) => `id_${id}`;
-const parseAccountId = (formattedId: string | null) => 
-  formattedId ? formattedId.replace('id_', '') : null;
+const formatAccountId = (id: string) => `${id}`;
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -26,12 +24,7 @@ export const useAppStore = create<AppState>()(
       },
       setSelectedChat: (chat) => set({ selectedChat: chat }),
       clearState: () => set({ selectedAccount: null, selectedChat: null }),
-      // Helper to get the raw account ID for API calls
-      getSelectedAccountRawId: () => {
-        const state = get();
-        return state.selectedAccount ? parseAccountId(state.selectedAccount.id) : null;
-      }
-    }),
+    }),   
     {
       name: 'app-storage',
     }

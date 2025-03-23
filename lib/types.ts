@@ -12,6 +12,13 @@ export interface InstagramAccount {
     profile_picture_url: string;
     followers_count: number;
   };
+  bot_active?: boolean;
+  bot_config?: {
+    instruction?: string;
+    context?: string;
+    max_tokens?: number;
+    [key: string]: any;
+  };
 }
 
 export interface InstagramChat {
@@ -22,6 +29,7 @@ export interface InstagramChat {
   usage: Record<string, any>;
   last_interaction: string;
   status: string;
+  bot_active: boolean;
   metadata: {
     name?: string;
     profile_picture_url?: string;
@@ -63,5 +71,4 @@ export interface AppState {
   setSelectedAccount: (account: InstagramAccount | null) => void;
   setSelectedChat: (chat: InstagramChat | null) => void;
   clearState: () => void;
-  getSelectedAccountRawId: () => string | null;
 }

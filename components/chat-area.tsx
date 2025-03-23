@@ -136,7 +136,7 @@ export function ChatArea({ currentUserId }: Props) {
   }
 
   return (
-    <div className="flex flex-1 h-[calc(100vh-8rem)] overflow-hidden">
+    <div className="flex flex-1 h-full overflow-hidden">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0 bg-white">
         {/* Chat Header */}
@@ -201,7 +201,7 @@ export function ChatArea({ currentUserId }: Props) {
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="min-h-full flex flex-col justify-end">
+          <div className="h-full flex flex-col justify-end">
             <div className="p-6 space-y-4">
               {isLoading ? (
                 <div className="text-center text-gray-500 py-4">Loading messages...</div>
